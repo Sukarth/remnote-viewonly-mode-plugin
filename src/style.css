@@ -1,0 +1,44 @@
+/* Plugin-specific styles */
+.view-only-widget {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.view-only-widget button {
+  transition: all 0.2s ease-in-out;
+}
+
+.view-only-widget button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.view-only-widget button:active {
+  transform: translateY(0);
+}
+
+.view-only-widget .status-indicator {
+  animation: fade-in 0.3s ease-in-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive design for smaller sidebar */
+@media (max-width: 300px) {
+  .view-only-widget {
+    padding: 12px;
+  }
+  
+  .view-only-widget button {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
