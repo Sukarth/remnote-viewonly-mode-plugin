@@ -63,7 +63,29 @@ module.exports = {
   ].filter(Boolean),
   devServer: {
     port: 8080,
+    open: true,
     hot: true,
-    liveReload: true,
+    compress: true,
+    watchFiles: ['src/*'],
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'baggage, sentry-trace, X-Requested-With, content-type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Private-Network': 'true'  // ADD THIS LINE
+    },
+    setupMiddlewares: (middlewares, devServer) => {
+      devServer.app.use('*', (req, res, next) => {
+        if (req.method === 'OPTIONS') {
+          res.header('Access-Control-Allow-Origin', '*');
+          res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+          res.header('Access-Control-Allow-Headers', 'baggage, sentry-trace, X-Requested-With, content-type, Authorization');
+          res.header('Access-Control-Allow-Private-Network', 'true');
+          res.sendStatus(200);
+        } else {
+          next();
+        }
+      });
+      return middlewares;
+    }
   },
 };
