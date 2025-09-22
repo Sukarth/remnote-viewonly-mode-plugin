@@ -1,0 +1,22 @@
+{
+  "manifestVersion": 1,
+  "id": "viewonly_mode",
+  "name": "View-Only Mode",
+  "author": "Sukarth",
+  "repoUrl": "https://github.com/Sukarth/remnote-viewonly-mode-plugin",
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "theme": [],
+  "enableOnMobile": true,
+  "description": "Enable view-only mode to prevent accidental edits in your RemNote documents. Toggle on/off with a simple button in the sidebar.",
+  "requestNative": false,
+  "requiredScopes": [
+    {
+      "type": "All",
+      "level": "ReadWrite"
+    }
+  ]
+}
