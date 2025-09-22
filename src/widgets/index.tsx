@@ -1,4 +1,8 @@
-import { declareIndexPlugin, type ReactRNPlugin, WidgetLocation } from '@remnote/plugin-sdk';
+import {
+  declareIndexPlugin,
+  type ReactRNPlugin,
+  WidgetLocation,
+} from '@remnote/plugin-sdk';
 import '../style.css';
 import '../index.css';
 
@@ -51,7 +55,7 @@ const VIEW_ONLY_CSS = `
 }
 
 /* Target any input-like elements */
-.view-only-mode input, 
+.view-only-mode input,
 .view-only-mode textarea,
 .view-only-mode [role="textbox"] {
   pointer-events: none !important;
@@ -95,7 +99,7 @@ const VIEW_ONLY_CSS = `
 let isViewOnlyMode = false;
 let styleElement: HTMLStyleElement | null = null;
 let indicatorElement: HTMLElement | null = null;
-let keydownHandler: ((event: KeyboardEvent) => void) | null = null;
+let keydownHandler: ((event: Event) => void) | null = null;
 
 // More comprehensive list of editing selectors
 const EDITING_SELECTORS = [
@@ -110,7 +114,7 @@ const EDITING_SELECTORS = [
   '.EditorContainer',
   'input',
   'textarea',
-  '[role="textbox"]'
+  '[role="textbox"]',
 ];
 
 function injectViewOnlyStyles() {
@@ -131,7 +135,7 @@ function removeViewOnlyStyles() {
 
 function createViewOnlyIndicator() {
   if (indicatorElement) return;
-  
+
   indicatorElement = document.createElement('div');
   indicatorElement.className = 'view-only-indicator';
   indicatorElement.innerHTML = '🔒 VIEW-ONLY MODE ACTIVE';
@@ -154,7 +158,7 @@ function createViewOnlyIndicator() {
     user-select: none !important;
     pointer-events: none !important;
   `;
-  
+
   document.body.appendChild(indicatorElement);
 }
 
@@ -167,8 +171,10 @@ function removeViewOnlyIndicator() {
 
 function disableContentEditable() {
   // Find and disable all contenteditable elements
-  const editableElements = document.querySelectorAll('[contenteditable="true"]');
-  editableElements.forEach(element => {
+  const editableElements = document.querySelectorAll(
+    '[contenteditable="true"]'
+  );
+  editableElements.forEach((element) => {
     element.setAttribute('data-original-contenteditable', 'true');
     element.setAttribute('contenteditable', 'false');
   });
@@ -176,14 +182,18 @@ function disableContentEditable() {
 
 function enableContentEditable() {
   // Re-enable contenteditable elements
-  const elements = document.querySelectorAll('[data-original-contenteditable="true"]');
-  elements.forEach(element => {
+  const elements = document.querySelectorAll(
+    '[data-original-contenteditable="true"]'
+  );
+  elements.forEach((element) => {
     element.setAttribute('contenteditable', 'true');
     element.removeAttribute('data-original-contenteditable');
   });
 }
 
-function preventEditingShortcuts(event: KeyboardEvent) {
+function preventEditingShortcuts(event: Event) {
+  if (!(event instanceof KeyboardEvent)) return; // Only handle keyboard events
+
   // Allow navigation and reading shortcuts
   const allowedShortcuts = [
     event.ctrlKey && event.key === 'c', // Copy
@@ -205,8 +215,12 @@ function preventEditingShortcuts(event: KeyboardEvent) {
 
   // Block all other keyboard input
   const blockingKeys = [
-    'Backspace', 'Delete', 'Enter', 'Tab',
-    'Insert', 'Space'
+    'Backspace',
+    'Delete',
+    'Enter',
+    'Tab',
+    'Insert',
+    'Space',
   ];
 
   const blockingShortcuts = [
@@ -214,13 +228,20 @@ function preventEditingShortcuts(event: KeyboardEvent) {
     event.ctrlKey && (event.key === 'x' || event.key === 'v'), // Cut/Paste
     event.ctrlKey && event.shiftKey && event.key === 'Z', // Redo alternative
     event.altKey, // Block Alt combinations
-    event.metaKey && event.key !== 'c' && event.key !== 'a' && event.key !== 'f', // Block Cmd combinations except allowed
+    event.metaKey &&
+      event.key !== 'c' &&
+      event.key !== 'a' &&
+      event.key !== 'f', // Block Cmd combinations except allowed
   ];
 
   // Block typing (letters, numbers, symbols)
   const isTyping = event.key.length === 1 && !event.ctrlKey && !event.metaKey;
-  
-  if (isTyping || blockingKeys.includes(event.key) || blockingShortcuts.some(Boolean)) {
+
+  if (
+    isTyping ||
+    blockingKeys.includes(event.key) ||
+    blockingShortcuts.some(Boolean)
+  ) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
@@ -229,67 +250,82 @@ function preventEditingShortcuts(event: KeyboardEvent) {
 
 function enableViewOnlyMode() {
   if (isViewOnlyMode) return;
-  
+
   console.log('Enabling view-only mode...');
   isViewOnlyMode = true;
-  
+
   // Apply styles
   injectViewOnlyStyles();
   document.body.classList.add('view-only-mode');
-  
+
   // Create visual indicator
   createViewOnlyIndicator();
-  
+
   // Disable contenteditable
   disableContentEditable();
-  
+
   // Add keyboard event listener with high priority
   keydownHandler = preventEditingShortcuts;
-  document.addEventListener('keydown', keydownHandler, { capture: true, passive: false });
-  document.addEventListener('keypress', keydownHandler, { capture: true, passive: false });
-  document.addEventListener('input', keydownHandler, { capture: true, passive: false });
-  
+  document.addEventListener('keydown', keydownHandler, {
+    capture: true,
+    passive: false,
+  });
+  document.addEventListener('keypress', keydownHandler, {
+    capture: true,
+    passive: false,
+  });
+  // Note: 'input' event removed as it conflicts with handler type; if needed, add separate handler
+
   // Also block mouse events that could trigger editing
   const blockMouseEvents = (event: Event) => {
     const target = event.target as Element;
-    if (target && EDITING_SELECTORS.some(selector => target.matches && target.matches(selector))) {
+    if (
+      target &&
+      EDITING_SELECTORS.some(
+        (selector) => target.matches && target.matches(selector)
+      )
+    ) {
       event.preventDefault();
       event.stopPropagation();
     }
   };
-  
+
   document.addEventListener('mousedown', blockMouseEvents, { capture: true });
   document.addEventListener('mouseup', blockMouseEvents, { capture: true });
   document.addEventListener('click', blockMouseEvents, { capture: true });
   document.addEventListener('dblclick', blockMouseEvents, { capture: true });
-  
+
   console.log('View-only mode enabled successfully');
 }
 
 function disableViewOnlyMode() {
   if (!isViewOnlyMode) return;
-  
+
   console.log('Disabling view-only mode...');
   isViewOnlyMode = false;
-  
+
   // Remove styles and classes
   removeViewOnlyStyles();
   removeViewOnlyIndicator();
   document.body.classList.remove('view-only-mode');
-  
+
   // Re-enable contenteditable
   enableContentEditable();
-  
+
   // Remove event listeners
   if (keydownHandler) {
-    document.removeEventListener('keydown', keydownHandler, { capture: true } as any);
-    document.removeEventListener('keypress', keydownHandler, { capture: true } as any);
-    document.removeEventListener('input', keydownHandler, { capture: true } as any);
+    document.removeEventListener('keydown', keydownHandler, {
+      capture: true,
+    } as any);
+    document.removeEventListener('keypress', keydownHandler, {
+      capture: true,
+    } as any);
+    // Note: 'input' event listener removed
     keydownHandler = null;
   }
-  
+
   // Remove mouse event blocking (this is trickier, but styles should handle it)
-  
+
   console.log('View-only mode disabled successfully');
 }
 
@@ -304,7 +340,7 @@ function toggleViewOnlyMode() {
 
 async function onActivate(plugin: ReactRNPlugin) {
   console.log('View-Only Mode plugin activating...');
-  
+
   // Register settings
   await plugin.settings.registerBooleanSetting({
     id: 'remember-state',
@@ -327,7 +363,7 @@ async function onActivate(plugin: ReactRNPlugin) {
     action: async () => {
       toggleViewOnlyMode();
       const status = isViewOnlyMode ? 'enabled' : 'disabled';
-      await plugin.app.toast(`View-only mode ${status}`, { type: 'success' });
+      await plugin.app.toast(`View-only mode ${status}`);
     },
   });
 
@@ -338,7 +374,7 @@ async function onActivate(plugin: ReactRNPlugin) {
     action: async () => {
       if (!isViewOnlyMode) {
         enableViewOnlyMode();
-        await plugin.app.toast('View-only mode enabled', { type: 'success' });
+        await plugin.app.toast('View-only mode enabled');
       }
     },
   });
@@ -350,21 +386,24 @@ async function onActivate(plugin: ReactRNPlugin) {
     action: async () => {
       if (isViewOnlyMode) {
         disableViewOnlyMode();
-        await plugin.app.toast('View-only mode disabled', { type: 'success' });
+        await plugin.app.toast('View-only mode disabled');
       }
     },
   });
 
   // Register sidebar widget
-  await plugin.app.registerWidget('view_only_widget', WidgetLocation.RightSidebar, {
-    dimensions: { height: 'auto', width: '100%' },
-  });
+  await plugin.app.registerWidget(
+    'view_only_widget',
+    WidgetLocation.RightSidebar,
+    {
+      dimensions: { height: 'auto', width: '100%' },
+    }
+  );
 
   // Show activation message
-  await plugin.app.toast('View-Only Mode plugin loaded! Click the sidebar widget or use Ctrl+Shift+P → "Toggle View-Only Mode"', { 
-    type: 'info',
-    durationMs: 5000 
-  });
+  await plugin.app.toast(
+    'View-Only Mode plugin loaded! Click the sidebar widget or use Ctrl+Shift+P → "Toggle View-Only Mode"'
+  );
 
   // Restore state if setting is enabled
   const rememberState = await plugin.settings.getSetting('remember-state');
@@ -374,7 +413,7 @@ async function onActivate(plugin: ReactRNPlugin) {
       enableViewOnlyMode();
     }
   }
-  
+
   console.log('View-Only Mode plugin activated successfully');
 }
 

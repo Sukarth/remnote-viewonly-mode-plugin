@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { renderWidget, usePlugin, WidgetLocation } from '@remnote/plugin-sdk';
 
-interface ViewOnlyWidgetProps {
-  // Widget props if needed
-}
-
-function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
+function ViewOnlyWidget() {
   const plugin = usePlugin();
   const [isViewOnly, setIsViewOnly] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(true);
@@ -16,10 +12,10 @@ function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
     const loadSettings = async () => {
       const shortcuts = await plugin.settings.getSetting('show-shortcuts');
       const remember = await plugin.settings.getSetting('remember-state');
-      setShowShortcuts(shortcuts || true);
-      setRememberState(remember || false);
+      setShowShortcuts(typeof shortcuts === 'boolean' ? shortcuts : true);
+      setRememberState(typeof remember === 'boolean' ? remember : false);
     };
-    
+
     loadSettings();
 
     // Poll for view-only state changes (since we can't easily listen to the global state)
@@ -39,24 +35,27 @@ function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
       (window as any).toggleViewOnlyMode?.();
       const newState = (window as any).isViewOnlyModeActive?.() || false;
       setIsViewOnly(newState);
-      
+
       // Save state if remember setting is enabled
       if (rememberState) {
-        localStorage.setItem('viewonly-mode-state', newState ? 'enabled' : 'disabled');
+        localStorage.setItem(
+          'viewonly-mode-state',
+          newState ? 'enabled' : 'disabled'
+        );
       }
-      
+
       const status = newState ? 'enabled' : 'disabled';
-      await plugin.app.toast(`View-only mode ${status}`, { type: 'success' });
+      await plugin.app.toast(`View-only mode ${status}`);
     } catch (error) {
       console.error('Error toggling view-only mode:', error);
-      await plugin.app.toast('Error toggling view-only mode', { type: 'error' });
+      await plugin.app.toast('Error toggling view-only mode');
     }
   };
 
   const handleSettingChange = async (setting: string, value: boolean) => {
     try {
-      await plugin.settings.setSetting(setting, value);
-      
+      (plugin.settings as any).setSetting(setting, value);
+
       if (setting === 'show-shortcuts') {
         setShowShortcuts(value);
       } else if (setting === 'remember-state') {
@@ -87,7 +86,8 @@ function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
 
   const containerStyle: React.CSSProperties = {
     padding: '16px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     backgroundColor: '#f8fafc',
     borderRadius: '8px',
     border: '1px solid #e2e8f0',
@@ -133,10 +133,17 @@ function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
   return (
     <div style={containerStyle}>
       <div style={sectionStyle}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600', color: '#1f2937' }}>
+        <h3
+          style={{
+            margin: '0 0 12px 0',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#1f2937',
+          }}
+        >
           👁️ View-Only Mode
         </h3>
-        
+
         <button
           onClick={handleToggle}
           style={buttonStyle}
@@ -162,17 +169,21 @@ function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
           <input
             type="checkbox"
             checked={rememberState}
-            onChange={(e) => handleSettingChange('remember-state', e.target.checked)}
+            onChange={(e) =>
+              handleSettingChange('remember-state', e.target.checked)
+            }
             style={checkboxStyle}
           />
           Remember state between sessions
         </label>
-        
+
         <label style={labelStyle}>
           <input
             type="checkbox"
             checked={showShortcuts}
-            onChange={(e) => handleSettingChange('show-shortcuts', e.target.checked)}
+            onChange={(e) =>
+              handleSettingChange('show-shortcuts', e.target.checked)
+            }
             style={checkboxStyle}
           />
           Show keyboard shortcuts
@@ -181,27 +192,32 @@ function ViewOnlyWidget(props: ViewOnlyWidgetProps) {
 
       {showShortcuts && (
         <div style={shortcutStyle}>
-          <strong>Quick Commands:</strong><br />
-          • Press <code>Ctrl+Shift+P</code> → type "view-only"<br />
-          • Quick code: Type <code>/vo</code> in editor<br />
-          • Use this widget to toggle
+          <strong>Quick Commands:</strong>
+          <br />• Press <code>Ctrl+Shift+P</code> → type "view-only"
+          <br />• Quick code: Type <code>/vo</code> in editor
+          <br />• Use this widget to toggle
         </div>
       )}
 
-      <div style={{
-        fontSize: '11px',
-        color: '#9ca3af',
-        marginTop: '12px',
-        padding: '8px',
-        backgroundColor: '#f9fafb',
-        borderRadius: '4px',
-        border: '1px solid #e5e7eb'
-      }}>
-        <strong>What does view-only mode do?</strong><br />
-        • Prevents accidental edits<br />
-        • Blocks keyboard shortcuts that modify content<br />
-        • Still allows copying, scrolling, and searching<br />
-        • Shows a visual indicator when active
+      <div
+        style={{
+          fontSize: '11px',
+          color: '#9ca3af',
+          marginTop: '12px',
+          padding: '8px',
+          backgroundColor: '#f9fafb',
+          borderRadius: '4px',
+          border: '1px solid #e5e7eb',
+        }}
+      >
+        <strong>What does view-only mode do?</strong>
+        <br />
+        • Prevents accidental edits
+        <br />
+        • Blocks keyboard shortcuts that modify content
+        <br />
+        • Still allows copying, scrolling, and searching
+        <br />• Shows a visual indicator when active
       </div>
     </div>
   );
